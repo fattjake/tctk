@@ -61,7 +61,7 @@ namespace TooCuteToLive
             graphics.PreferredBackBufferWidth = 800;
             graphics.PreferredBackBufferHeight = 600;
 
-            graphics.ToggleFullScreen();
+            //graphics.ToggleFullScreen();
 
             this.Window.Title = "Too Cute To Live";
 

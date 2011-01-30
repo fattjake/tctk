@@ -87,7 +87,7 @@ namespace TooCuteToLive
             int xpos = (frameNum - (row * fpr)) * (int)tWidth;
             int ypos = row * (int)tHeight;
             Rectangle myRect = new Rectangle(xpos, ypos, (int)tWidth, (int)tHeight);
-            Console.WriteLine(myRect); 
+           // Console.WriteLine(myRect); 
             return myRect;
 
         }

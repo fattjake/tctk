@@ -17,6 +17,9 @@ namespace TooCuteToLive
         private Texture2D cupcake;
         private string mTextureName;
         private ContentManager mContent;
+        public float timer;
+        public bool eating;
+        private bool remove;
 
         enum states
         {
@@ -38,8 +41,17 @@ namespace TooCuteToLive
             mPosition = position;
             mState = states.DRAW;
             cupcake = mContent.Load<Texture2D>("Items/cupcake");
+            timer = 2.0f;
+            eating = false;
+            remove = false;
         }
 
+
+        public bool Remove
+        {
+            get { return remove; }
+            set { remove = value; }
+        }
         public void Load()
         {
 
@@ -47,7 +59,15 @@ namespace TooCuteToLive
 
         public void Update(GameTime gameTime)
         {
-
+            if (eating)
+            {
+                timer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+            if (timer <= 0)
+            {
+                remove = true;
+                timer = 2.0f;
+            }
         }
 
         public void Draw(SpriteBatch spriteBatch)

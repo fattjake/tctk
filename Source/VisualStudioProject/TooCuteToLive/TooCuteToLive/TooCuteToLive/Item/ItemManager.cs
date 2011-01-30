@@ -15,23 +15,38 @@ namespace TooCuteToLive
     {
         public List<Item> itemList;
         ContentManager mContent;
+   
 
         public ItemManager(ContentManager content)
         {
             itemList = new List<Item>();
             mContent = content;
+      
         }
 
         public void addItem(string textureName, Vector2 position)
         {
-            itemList.Add(new Item(textureName, position, mContent));
+            if (itemList.Count < 1)
+            {
+                itemList.Add(new Item(textureName, position, mContent));
+            }
         }
 
         public void Update(GameTime gameTime)
         {
+            List<Item> removeList = new List<Item>();
+
             foreach (Item item in itemList)
             {
                 item.Update(gameTime);
+
+                if (item.Remove == true)
+                    removeList.Add(item);
+            }
+
+            foreach (Item item in removeList)
+            {
+                itemList.Remove(item);
             }
         }
 

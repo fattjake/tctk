@@ -23,6 +23,7 @@ namespace TooCuteToLive
 
         private float timeOnFire;
         private float respawnRate;
+        private float timeEating;
 
         private float[] hopY = { 1.0f, 0.0f, 2.0f, 0.0f, 3.0f, 0.0f, 4.0f, 0.0f, 5.0f, 0.0f, -1.0f, 0.0f, -2.0f, 0.0f, -3.0f, 0.0f, -4.0f, 0.0f, -5.0f, 0.0f};
         private int hopCounter = 0;
@@ -35,24 +36,7 @@ namespace TooCuteToLive
 
         private Texture2D hacktex;
 
-        enum age
-        {
-            BABY,
-            MEDIUM,
-            FAT
-        };
-
         age mAge;
-
-        public enum states
-        {
-            WALKING,
-            RUNNINGAWAY,
-            ONFIRE,
-            EATING,
-            SEEKING,
-            DEAD
-        };
 
         states mStates;
 
@@ -88,6 +72,7 @@ namespace TooCuteToLive
             distance = 10000;
             destination = Vector2.Zero;
             timeOnFire = 5.0f;
+            timeEating = 2.0f;
             respawnRate = 3.0f;
             remove = false;
             multipleOfTwo = false;
@@ -135,21 +120,68 @@ namespace TooCuteToLive
                     respawnRate = 3.0f;
                 }
             }
-            mPosition.X += mSpeed.X;
-            mPosition.Y += hopY[hopCounter];
-            hopCounter++;
-            if (hopCounter >= 20)
-                hopCounter = 0;
+            else if (mStates == states.WALKING)
+            {
 
-            if (mPosition.X + getWidth() > graphics.GraphicsDevice.Viewport.Width)
-                mSpeed.X *= -1;
-            else if (mPosition.X <= 0)
-                mSpeed.X *= -1;
-            if (mPosition.Y + getHeight() > graphics.GraphicsDevice.Viewport.Height)
-                mSpeed.Y *= -1;
-            else if (mPosition.Y <= 0)
-                mSpeed.Y *= -1;
+                mPosition.X += mSpeed.X;
+                mPosition.Y += hopY[hopCounter];
+                hopCounter++;
+                if (hopCounter >= 20)
+                    hopCounter = 0;
 
+                if (mPosition.X + getWidth() > graphics.GraphicsDevice.Viewport.Width)
+                    mSpeed.X *= -1;
+                else if (mPosition.X <= 0)
+                    mSpeed.X *= -1;
+                if (mPosition.Y + getHeight() > graphics.GraphicsDevice.Viewport.Height)
+                    mSpeed.Y *= -1;
+                else if (mPosition.Y <= 0)
+                    mSpeed.Y *= -1;
+
+            }
+            else if (mStates == states.SEEKING)
+            {
+                mSpeed.X = 1;
+                mSpeed.Y = 1;
+                int xDir = 0;
+                int yDir = 0;
+                float xMove = destination.X - Position.X;
+                float yMove = destination.Y - Position.Y;
+
+                //Console.WriteLine(destination);
+
+                if (Math.Abs(mPosition.X - destination.X) < 20 &&
+                    Math.Abs(mPosition.Y - destination.Y) < 20)
+                {
+                    mStates = states.EATING;
+                    
+                } 
+                
+                if (mPosition.X != destination.X)
+                {
+                    xDir = (int)(xMove / Math.Abs(xMove));
+                    mPosition.X += mSpeed.X * xDir;
+                }
+                
+                if (mPosition.Y != destination.Y)
+                {
+                    yDir = (int)(yMove / Math.Abs(yMove));
+                    mPosition.Y += mSpeed.Y * yDir; 
+                }
+
+                Console.Write(mPosition);
+                Console.Write(destination);
+
+            }
+            else if (mStates == states.EATING)
+            {
+                timeEating -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (timeEating < 0)
+                {
+                    mStates = states.WALKING;
+                }
+
+            }
             //bSphere.Center = new Vector3(mPosition.X, mPosition.Y, 0.0f);
         }
 
@@ -157,6 +189,11 @@ namespace TooCuteToLive
         {
             mSprite.Draw(spriteBatch, mPosition);
             //spriteBatch.Draw(hacktex, new Vector2(bSphere.Center.X - mSprite.getWidth() / 2, bSphere.Center.Y - mSprite.getHeight() / 2), Color.White);
+        }
+
+        public states getState()
+        {
+            return mStates;
         }
 
         public bool Collides(BoundingSphere boundSphere)
@@ -183,6 +220,21 @@ namespace TooCuteToLive
 
             mStates = states.ONFIRE;
             changeImage("charMediumOnFire", Frames.CHAR_MED_ON_FIRE_FRAMES);
+        }
+
+        public void setSeek(bool SEEK)
+        {
+            if (mStates == states.SEEKING || mStates == states.WALKING)
+            {
+                if (SEEK)
+                {
+                    mStates = states.SEEKING;
+                }
+                else
+                {
+                    mStates = states.WALKING;
+                }
+            }
         }
 
         public bool Remove
