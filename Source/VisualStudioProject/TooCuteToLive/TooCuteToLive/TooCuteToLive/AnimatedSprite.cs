@@ -102,8 +102,8 @@ namespace TooCuteToLive
             int width = mTexture.Width / mFrameCount;
             Rectangle sourcerect = getRect(mFrame);
 
-            spriteBatch.Draw(mTexture, position, sourcerect, Color.White);
-
+            //spriteBatch.Draw(mTexture, position, sourcerect, Color.White);
+            spriteBatch.Draw(mTexture, position, sourcerect, Color.White, 0.0f, Vector2.Zero, 0.5f, SpriteEffects.None, 0.0f);
         }
 
         /// <summary>
