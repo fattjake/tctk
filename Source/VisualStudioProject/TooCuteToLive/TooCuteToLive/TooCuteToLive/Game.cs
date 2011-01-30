@@ -19,6 +19,8 @@ namespace TooCuteToLive
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
+        private SpriteFont font;
+
         private CharacterManager mCharacterManager;
         private ItemManager mItemManager;
 
@@ -33,12 +35,19 @@ namespace TooCuteToLive
 
         private HUD hud;
 
+        private float timer;
+
         Camera mCam;
 
         private GameStates mCurrentState = GameStates.MENU;
 
         private Menu mMenu;
         private Item mItem;
+        private Scoring mScoring;
+        private Intro mIntro;
+
+        Random rand = new Random();
+        private int temp;
 
         public Game()
         {
@@ -55,11 +64,11 @@ namespace TooCuteToLive
         /// </summary>
         protected override void Initialize()
         {
-            //graphics.PreferredBackBufferWidth = graphics.GraphicsDevice.DisplayMode.Width;
-            //graphics.PreferredBackBufferHeight = graphics.GraphicsDevice.DisplayMode.Height;
+            graphics.PreferredBackBufferWidth = graphics.GraphicsDevice.DisplayMode.Width;
+            graphics.PreferredBackBufferHeight = graphics.GraphicsDevice.DisplayMode.Height;
 
-            graphics.PreferredBackBufferWidth = 800;
-            graphics.PreferredBackBufferHeight = 600;
+//            graphics.PreferredBackBufferWidth = 800;
+//            graphics.PreferredBackBufferHeight = 600;
 
             //graphics.ToggleFullScreen();
 
@@ -70,9 +79,10 @@ namespace TooCuteToLive
             Class1.graph = graphics;
 
             mCharacterManager = CharacterManager.GetInstance(Content, graphics);
-            mCharacterManager.addCharacter("charMedium", Frames.CHAR_MED_FRAMES);
 
             mMenu = new Menu(this);
+            mScoring = new Scoring();
+            mIntro = new Intro();
 
             mItemManager = new ItemManager(Content);
 
@@ -80,6 +90,11 @@ namespace TooCuteToLive
 
             hud = new HUD();
             wM = new WeaponManager(Content, graphics);
+
+            /* Number of seconds the level will run */
+            timer = 60.0f;
+
+            temp = rand.Next(0, 10);
 
             base.Initialize();
         }
@@ -90,15 +105,22 @@ namespace TooCuteToLive
         /// </summary>
         protected override void LoadContent()
         {
+            AudioManager.Load(Content);
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
 //            mCharacterManager.Load();
             mMenu.Load(Content);
+            mIntro.Load(Content);
+            mScoring.Load(Content);
 
             hud.Load(Content, graphics.GraphicsDevice.Viewport);
             cursor = Content.Load<Texture2D>("Cursor/fluffycursor");
             level = Content.Load<Texture2D>("Levels/Level_ver02");
+            font = Content.Load<SpriteFont>("Fonts/kootenay");
+
+            for (int i = 0; i < 1; i++)
+                mCharacterManager.addCharacter("babyspawn", 6);
         }
 
         /// <summary>
@@ -121,9 +143,20 @@ namespace TooCuteToLive
             switch (mCurrentState)
             {
                 case GameStates.GAME:
+
+                    if (temp <= 4)
+                        AudioManager.Play(AudioManager.chillin);
+                    else
+                        AudioManager.Play(AudioManager.chillin2);
                     hud.Update(gameTime);
 
-                    mCam.Zoom += (mouseStatePrev.ScrollWheelValue - mouseStateCurr.ScrollWheelValue)/100;
+                    timer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    if (timer <= 0 || mCharacterManager.isEmpty())
+                    {
+                        mScoring.Score = (int)timer;
+                        mCurrentState = GameStates.SCORING;
+                    }
+//                    mCam.Zoom += (mouseStatePrev.ScrollWheelValue - mouseStateCurr.ScrollWheelValue)/100;
 
                     if (mouseStateCurr.LeftButton == ButtonState.Pressed && 
                         mouseStatePrev.LeftButton == ButtonState.Released)
@@ -140,7 +173,6 @@ namespace TooCuteToLive
                     else if (keystate.IsKeyDown(Keys.A) && prevKeyState.IsKeyUp(Keys.A))
                     {
                         mCharacterManager.addCharacter("charMedium", Frames.CHAR_MED_FRAMES);
-                        //mCharacterManager.addCharacter("charMedium", new Vector2(300, 300), Frames.CHAR_MED_FRAMES);
                     }
 
                     mItemManager.Update(gameTime);
@@ -153,12 +185,16 @@ namespace TooCuteToLive
                     mMenu.Update(gameTime, ref mCurrentState);
                     break;
 
-//                case gameStates.PAUSE:
-                    /* TODO - Add pause state */
-//                    break;
+                case GameStates.INTRO:
+                    mIntro.Update(gameTime, ref mCurrentState);
+                    break;
 
                 case GameStates.SCORING:
-                    /* TODO - Add score state */
+                    mScoring.Update(gameTime, ref mCurrentState);
+                    break;
+
+                case GameStates.EXIT:
+                    this.Exit();
                     break;
             }
             mouseStatePrev = mouseStateCurr;
@@ -188,14 +224,12 @@ namespace TooCuteToLive
             switch (mCurrentState)
             {
                 case GameStates.GAME:
-                    Console.WriteLine("Width: " + (float)graphics.GraphicsDevice.Viewport.Width / (float)level.Width);
-                    Console.WriteLine("Height: " + (float)graphics.GraphicsDevice.Viewport.Height / (float)level.Height);
-
                     spriteBatch.Draw(level, new Vector2(0.0f, 0.0f), null, Color.White, 0.0f, new Vector2(0.0f, 0.0f), 
                                      new Vector2((float)graphics.GraphicsDevice.Viewport.Width / (float)level.Width, 
                                                  (float)graphics.GraphicsDevice.Viewport.Height / (float)level.Height),
                                      SpriteEffects.None, 0.0f);
-                    //spriteBatch.Draw(level, Vector2.Zero, Color.White);
+                    spriteBatch.DrawString(font, "Time: " + (int)timer, new Vector2(100.0f, 30.0f), Color.Black);
+
                     mCharacterManager.Draw(spriteBatch);
                     mItemManager.Draw(spriteBatch);
                     wM.Draw(spriteBatch);
@@ -204,16 +238,16 @@ namespace TooCuteToLive
                     break;
 
                 case GameStates.MENU:
-                    mMenu.Draw(spriteBatch);
+                    mMenu.Draw(spriteBatch, graphics);
                     spriteBatch.Draw(cursor, new Vector2(mouseStateCurr.X, mouseStateCurr.Y), Color.White);
                     break;
 
-//                case gameStates.PAUSE:
-                    /* TODO - Add pause draw stuff */
-//                    break;
+                case GameStates.INTRO:
+                    mIntro.Draw(spriteBatch);
+                    break;
 
                 case GameStates.SCORING:
-                    /* TODO - Add score draw stuff */
+                    mScoring.Draw(spriteBatch);
                     break;
             }
 
