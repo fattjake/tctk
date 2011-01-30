@@ -15,13 +15,25 @@ namespace TooCuteToLive
     {
         private string mTextureName;
         private Vector2 mPosition;
-        private float xspeed, yspeed;
+        private Vector2 mSpeed;
         private BoundingSphere bSphere;
         private AnimatedSprite mSprite;
         private int distance;
         private Vector2 destination;
 
+        private float timeOnFire;
+        private float respawnRate;
+
+        private float[] hopY = { 1.0f, 0.0f, 2.0f, 0.0f, 3.0f, 0.0f, 4.0f, 0.0f, 5.0f, 0.0f, -1.0f, 0.0f, -2.0f, 0.0f, -3.0f, 0.0f, -4.0f, 0.0f, -5.0f, 0.0f};
+        private int hopCounter = 0;
+
+        private bool multipleOfTwo;
+
         private ContentManager mContent;
+
+        private bool remove;
+
+        private Texture2D hacktex;
 
         enum age
         {
@@ -32,13 +44,14 @@ namespace TooCuteToLive
 
         age mAge;
 
-        enum states
+        public enum states
         {
             WALKING,
             RUNNINGAWAY,
             ONFIRE,
             EATING,
-            SEEKING
+            SEEKING,
+            DEAD
         };
 
         states mStates;
@@ -67,71 +80,83 @@ namespace TooCuteToLive
             mPosition = position;
             mAge = age.MEDIUM;
             mStates = states.WALKING;
-            xspeed = yspeed = 1.0f;
+            mSpeed = new Vector2(1.0f, 0.25f);
+            //mSpeed = new Vector2(0, 0);
             mSprite = new AnimatedSprite();
-            mSprite.Load(mContent, mTextureName, frameCount, 0.05f);
-            bSphere = new BoundingSphere(new Vector3(position.X + mSprite.getWidth() / 2, position.Y + mSprite.getHeight() / 2, 0.0f), mSprite.getWidth() / 2);
+            mSprite.Load(mContent, mTextureName, frameCount, 30, 149, 139, false);
+            bSphere = new BoundingSphere(new Vector3(position.X + mSprite.getWidth() / 2, position.Y + mSprite.getHeight() / 2, 0), mSprite.getWidth() / 2);
             distance = 10000;
             destination = Vector2.Zero;
+            timeOnFire = 5.0f;
+            respawnRate = 3.0f;
+            remove = false;
+            multipleOfTwo = false;
+            hacktex = Class1.CreateCircle((int)mSprite.getWidth() / 2, Color.Yellow);
         }
 
-//        public void changeImage(string textureName)
-//        {
-//            mTextureName = textureName;
-//            mSprite.Load(mContent, mTextureName, CHAR_MED_ON_FIRE_FRAMES, 0.2f);
-//        }
-
-        public void setSeek(bool seek)
+        public void changeImage(string textureName, int numFrames)
         {
-            if (seek == true && mStates == states.WALKING)
-                mStates = states.SEEKING;
-            else if (seek == false)
-                mStates = states.WALKING;
+            mTextureName = textureName;
+            mSprite.Load(mContent, mTextureName, numFrames, 30, 149, 139, false);
         }
 
-        public void Update(GameTime gameTime)
+ //       public void setSeek(bool seek)
+ //       {
+ //           if (seek == true && mStates == states.WALKING)
+ //               mStates = states.SEEKING;
+ //           else if (seek == false)
+ //               mStates = states.WALKING;
+ //       }
+
+        public void Update(GameTime gameTime, GraphicsDeviceManager graphics)
         {
-            if (mStates == states.SEEKING)
+            if (mStates != states.DEAD)
             {
-                float x = mPosition.X - destination.X;
-                float y = mPosition.Y - destination.Y;
-                if (x == 0 && y == 0)
+                bSphere.Center = new Vector3(mPosition.X + mSprite.getWidth() / 2, mPosition.Y + mSprite.getHeight() / 2, 0.0f);
+            }
+            mSprite.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
+
+            if (mStates == states.ONFIRE)
+            {
+                timeOnFire -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (timeOnFire <= 0)
                 {
-                    
+                    mStates = states.DEAD;
+                    timeOnFire = 5.0f;
                 }
             }
-            else if (mStates == states.EATING)
+            else if (mStates == states.DEAD)
             {
+                //changeImage("charMediumDead", Frames.CHAR_MED_DEAD_FRAMES);
+                respawnRate -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (respawnRate <= 0)
+                {
+                    remove = true;
+                    respawnRate = 3.0f;
+                }
+            }
+            mPosition.X += mSpeed.X;
+            mPosition.Y += hopY[hopCounter];
+            hopCounter++;
+            if (hopCounter >= 20)
+                hopCounter = 0;
 
-            }
-            else if (mStates == states.ONFIRE)
-            {
+            if (mPosition.X + getWidth() > graphics.GraphicsDevice.Viewport.Width)
+                mSpeed.X *= -1;
+            else if (mPosition.X <= 0)
+                mSpeed.X *= -1;
+            if (mPosition.Y + getHeight() > graphics.GraphicsDevice.Viewport.Height)
+                mSpeed.Y *= -1;
+            else if (mPosition.Y <= 0)
+                mSpeed.Y *= -1;
 
-            }
-            else if (mStates == states.RUNNINGAWAY)
-            {
-
-            }
-            else 
-            {
-                mPosition.X += xspeed;
-                mPosition.Y += yspeed;
-                if (mPosition.X > 800)
-                    xspeed *= -1;
-                else if (mPosition.X <= 0)
-                    xspeed *= -1;
-                if (mPosition.Y >= 600)
-                    yspeed *= -1;
-                else if (mPosition.Y <= 0)
-                    yspeed *= -1;  
-            }
-            bSphere.Center = new Vector3(mPosition.X + mSprite.getWidth() / 2, mPosition.Y + mSprite.getHeight() / 2, 0.0f);
-            mSprite.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
+            //bSphere.Center = new Vector3(mPosition.X, mPosition.Y, 0.0f);
         }
 
         public void Draw(SpriteBatch spriteBatch)
         {
             mSprite.Draw(spriteBatch, mPosition);
+            //spriteBatch.Draw(hacktex, new Vector2(bSphere.Center.X - mSprite.getWidth() / 2, bSphere.Center.Y - mSprite.getHeight() / 2), Color.White);
         }
 
         public bool Collides(BoundingSphere boundSphere)
@@ -141,12 +166,66 @@ namespace TooCuteToLive
 
         public bool Collides(Vector2 point)
         {
-            return bSphere.Contains(new Vector3(point.X, point.Y, 0.0f)) == ContainmentType.Contains;
+            //return (bSphere.Contains(new Vector3(point.X, point.Y, 0.0f)) == ContainmentType.Contains);
+
+            Vector2 c = new Vector2(mPosition.X + mSprite.getWidth() / 2, mPosition.Y +  mSprite.getHeight() / 2);
+            double dist = Math.Sqrt(Math.Pow((c.X - point.X), 2) + Math.Pow((c.Y - point.Y), 2));
+            //Console.WriteLine("center: " + c.X + " " + c.Y + " Point: " + point.X + " " + point.Y);
+            //Console.WriteLine("dist: " + dist);
+
+            return dist <= mSprite.getWidth() / 2;
         }
 
         public void kill()
         {
+            mSpeed.X = 4;
+            mSpeed.Y = 1;
+
             mStates = states.ONFIRE;
+            changeImage("charMediumOnFire", Frames.CHAR_MED_ON_FIRE_FRAMES);
+        }
+
+        public bool Remove
+        {
+            get { return remove; }
+            set { remove = value; }
+        }
+
+        public BoundingSphere BSphere
+        {
+            get { return bSphere; }
+        }
+
+        public Vector2 Speed
+        {
+            get { return mSpeed; }
+            set { mSpeed = value; }
+        }
+
+        public bool OnFire()
+        {
+            return mStates == states.ONFIRE;
+        }
+
+        public void SetOnFire()
+        {
+            kill();
+        }
+
+        public float getWidth()
+        {
+            return mSprite.getWidth();
+        }
+
+        public float getHeight()
+        {
+            return mSprite.getHeight();
+        }
+
+        public bool MultipleOfTwo
+        {
+            get { return multipleOfTwo; }
+            set { multipleOfTwo = value; }
         }
     }
 }

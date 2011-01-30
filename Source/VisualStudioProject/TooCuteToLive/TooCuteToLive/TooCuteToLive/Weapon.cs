@@ -30,9 +30,9 @@ namespace TooCuteToLive
 
         states mState;
 
-        public Weapon(string textureName, ContentManager cm)
+        public Weapon(string textureName, ContentManager cm, GraphicsDeviceManager graphics)
         {
-            mCharManager = CharacterManager.GetInstance(cm);
+            mCharManager = CharacterManager.GetInstance(cm, graphics);
             mTexture = cm.Load<Texture2D>("Weapons/" + textureName);
             mScale = new Vector2(1.0f, 0.0f);
             mStrikeTime = 0;
@@ -55,7 +55,6 @@ namespace TooCuteToLive
                 /* animation */
                 if (mScale.Y <= (mYValue + 50) / mTexture.Height)
                     mScale.Y += 0.1f;
-                mCharManager.pointKill(mStrikePos);
 
                 mOnScreenTime -= (float)gt.ElapsedGameTime.TotalSeconds;
                 if (mOnScreenTime <= 0)
@@ -64,6 +63,7 @@ namespace TooCuteToLive
                     mOnScreenTime = 0.5f;
                     mScale.Y = 0.0f;
                 }
+                mCharManager.pointKill(mStrikePos);
             }
         }
 
